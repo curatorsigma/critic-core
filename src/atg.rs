@@ -1,8 +1,8 @@
 //! The core tools for working with in critic
 //!
 //! For a definition of ATG, see `ATG_Definition.md`
-use std::marker::PhantomData;
 use crate::anchor::AnchorDialect;
+use std::marker::PhantomData;
 
 #[cfg(test)]
 mod test;
@@ -149,7 +149,8 @@ impl ControlPointDefinition {
             self.format_break,
             self.comment,
         ]
-        .contains(c) || self.is_non_semantic(c)
+        .contains(c)
+            || self.is_non_semantic(c)
     }
 
     /// True iff c is a non-semantic character
@@ -179,7 +180,7 @@ impl ControlPointDefinition {
 ///     non_semantic: "\t\n",
 ///     comment: '#',
 /// };
-/// 
+///
 /// struct ExampleAtgDialect {}
 /// impl AtgDialect for ExampleAtgDialect {
 ///     const NATIVE_POINTS: &'static str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,.'";
@@ -209,7 +210,7 @@ pub trait AtgDialect {
         Self::ATG_CONTROL_POINTS.is_control_point(c)
     }
 
-    fn is_non_semantic(c: &char)-> bool {
+    fn is_non_semantic(c: &char) -> bool {
         Self::ATG_CONTROL_POINTS.is_non_semantic(c)
     }
 }
@@ -219,25 +220,30 @@ pub trait AtgDialect {
 /// This type contains the location of the encountered problem.
 #[derive(Debug, PartialEq)]
 pub struct AtgParseError<A>
-    where A: AnchorDialect,
+where
+    A: AnchorDialect,
 {
     /// Location at which the problem was encountered (byte-offset, NOT Unicode)
     location: usize,
     /// The problem that occured
     reason: AtgParseErrorReason<A>,
 }
-impl<A> core::fmt::Display for AtgParseError<A> where A: AnchorDialect {
+impl<A> core::fmt::Display for AtgParseError<A>
+where
+    A: AnchorDialect,
+{
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{} at {}", self.reason, self.location)
     }
 }
 impl<A> std::error::Error for AtgParseError<A> where A: AnchorDialect {}
-impl<A> AtgParseError<A> where A: AnchorDialect {
+impl<A> AtgParseError<A>
+where
+    A: AnchorDialect,
+{
     /// Create an [AtgParseError]
     pub fn new(location: usize, reason: AtgParseErrorReason<A>) -> Self {
-        Self {
-            location, reason
-        }
+        Self { location, reason }
     }
 
     /// Add an offset to the existing location
@@ -251,7 +257,8 @@ impl<A> AtgParseError<A> where A: AnchorDialect {
 /// This type does not contain the location of the encountered problem.
 #[derive(Debug, PartialEq, Eq)]
 pub enum AtgParseErrorReason<A>
-    where A: AnchorDialect,
+where
+    A: AnchorDialect,
 {
     /// An escape character was used but not followed by 2,4, or 6 hexdigits defining a unicode
     /// scalar value or a control char
@@ -269,8 +276,9 @@ pub enum AtgParseErrorReason<A>
     /// EOF was encountered while a parameter still needed to be closed
     EOF(char),
 }
-impl<A> core::fmt::Display for AtgParseErrorReason::<A>
-    where A: AnchorDialect,
+impl<A> core::fmt::Display for AtgParseErrorReason<A>
+where
+    A: AnchorDialect,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         match self {
@@ -290,7 +298,10 @@ impl<A> core::fmt::Display for AtgParseErrorReason::<A>
                 write!(f, "There was a problem parsing an anchor: {x}.")
             }
             Self::UnknownFormatBreak(x) => {
-                write!(f, "{x} is not a format break ('line', 'column', 'paragraph', 'page).")
+                write!(
+                    f,
+                    "{x} is not a format break ('line', 'column', 'paragraph', 'page)."
+                )
             }
             Self::EOF(x) => {
                 write!(f, "EOF was encountered while waiting for {x}")
@@ -298,7 +309,7 @@ impl<A> core::fmt::Display for AtgParseErrorReason::<A>
         }
     }
 }
-impl<A> std::error::Error for AtgParseErrorReason::<A> where A: AnchorDialect {}
+impl<A> std::error::Error for AtgParseErrorReason<A> where A: AnchorDialect {}
 
 /// if the first character of s is the escape, try to read one character as an escape
 ///
@@ -309,7 +320,8 @@ impl<A> std::error::Error for AtgParseErrorReason::<A> where A: AnchorDialect {}
 /// - the remaining string
 /// - the index at which the remaining string starts in the input
 fn escape_one_if_required<D>(s: &str) -> Result<(char, &str, usize), String>
-    where D: AtgDialect,
+where
+    D: AtgDialect,
 {
     let Some(c) = s.chars().nth(0) else {
         return Err(s.to_owned());
@@ -339,17 +351,29 @@ fn escape_one_if_required<D>(s: &str) -> Result<(char, &str, usize), String>
         // try to get the next six characters as hexdigits and parse them as unicode point
         else if s.len() >= 7 && s.chars().skip(1).take(6).all(|x| x.is_ascii_hexdigit()) {
             let parsed = u32::from_str_radix(&s[1..7], 16).map_err(|_| s[0..7].to_owned())?;
-            Ok((core::char::from_u32(parsed).ok_or(&s[0..7].to_owned())?, &s[7..], 7))
+            Ok((
+                core::char::from_u32(parsed).ok_or(&s[0..7].to_owned())?,
+                &s[7..],
+                7,
+            ))
         }
         // try 4 hex digits
         else if s.len() >= 5 && s.chars().skip(1).take(4).all(|x| x.is_ascii_hexdigit()) {
             let parsed = u32::from_str_radix(&s[1..5], 16).map_err(|_| s[0..5].to_owned())?;
-            Ok((core::char::from_u32(parsed).ok_or(&s[0..5].to_owned())?, &s[5..], 5))
+            Ok((
+                core::char::from_u32(parsed).ok_or(&s[0..5].to_owned())?,
+                &s[5..],
+                5,
+            ))
         }
         // try 2 hex digits
         else if s.len() >= 3 && s.chars().skip(1).take(2).all(|x| x.is_ascii_hexdigit()) {
             let parsed = u32::from_str_radix(&s[1..3], 16).map_err(|_| s[0..3].to_owned())?;
-            Ok((core::char::from_u32(parsed).ok_or(&s[0..3].to_owned())?, &s[3..], 3))
+            Ok((
+                core::char::from_u32(parsed).ok_or(&s[0..3].to_owned())?,
+                &s[3..],
+                3,
+            ))
         } else {
             Err(s.to_owned())
         }
@@ -363,8 +387,9 @@ fn escape_one_if_required<D>(s: &str) -> Result<(char, &str, usize), String>
 /// - the next occurance of `c` is encountered
 /// - EOF is encountered (this is considered an Error)
 fn escape_until_next<A, D>(c: char, s: &str) -> Result<(String, &str, usize), AtgParseError<A>>
-    where D: AtgDialect,
-          A: AnchorDialect,
+where
+    D: AtgDialect,
+    A: AnchorDialect,
 {
     let mut res = String::new();
     let mut remainder = s;
@@ -375,7 +400,8 @@ fn escape_until_next<A, D>(c: char, s: &str) -> Result<(String, &str, usize), At
         if remainder.is_empty() {
             return Err(AtgParseError::<A>::new(offset, AtgParseErrorReason::EOF(c)));
         };
-        (current, remainder, single_escape_offset) = escape_one_if_required::<D>(remainder).map_err(|x| AtgParseError::new(offset, AtgParseErrorReason::EscapeMalformed(x)))?;
+        (current, remainder, single_escape_offset) = escape_one_if_required::<D>(remainder)
+            .map_err(|x| AtgParseError::new(offset, AtgParseErrorReason::EscapeMalformed(x)))?;
         offset = offset + single_escape_offset;
         if current == c {
             return Ok((res, remainder, offset));
@@ -392,9 +418,12 @@ fn escape_until_next<A, D>(c: char, s: &str) -> Result<(String, &str, usize), At
 /// - The string excluding the next control point
 /// - Some(the control point) or None, if the input ended
 /// - the remaining, unparsed input, INCLUDING the control point
-fn escape_until_control_point<A, D>(s: &str) -> Result<(String, Option<char>, &str, usize), AtgParseError<A>>
-    where D: AtgDialect,
-          A: AnchorDialect,
+fn escape_until_control_point<A, D>(
+    s: &str,
+) -> Result<(String, Option<char>, &str, usize), AtgParseError<A>>
+where
+    D: AtgDialect,
+    A: AnchorDialect,
 {
     let mut res = String::new();
     let mut remainder = s;
@@ -407,48 +436,62 @@ fn escape_until_control_point<A, D>(s: &str) -> Result<(String, Option<char>, &s
         if remainder.is_empty() {
             return Ok((res, None, remainder, 0));
         };
-        (current, new_remainder, single_escape_offset) = escape_one_if_required::<D>(remainder).map_err(|x| AtgParseError::new(offset, AtgParseErrorReason::EscapeMalformed(x)))?;
+        (current, new_remainder, single_escape_offset) = escape_one_if_required::<D>(remainder)
+            .map_err(|x| AtgParseError::new(offset, AtgParseErrorReason::EscapeMalformed(x)))?;
         offset = offset + single_escape_offset;
         if D::is_control_point(&current) {
             return Ok((res, Some(current), remainder, offset));
         }
         remainder = new_remainder;
         res.push(current);
-    };
+    }
 }
 
 /// Parse a single parameter.
 ///
 /// The first character in the input needs to be the parameter start control point.
-fn collect_parameter<A, D>(s: &str) -> Result<(String, &str, usize), AtgParseError::<A>>
-    where D: AtgDialect,
-          A: AnchorDialect,
+fn collect_parameter<A, D>(s: &str) -> Result<(String, &str, usize), AtgParseError<A>>
+where
+    D: AtgDialect,
+    A: AnchorDialect,
 {
-    let (first, remainder, _) = escape_one_if_required::<D>(s).map_err(|x| AtgParseError::new(0, AtgParseErrorReason::EscapeMalformed(x)))?;
+    let (first, remainder, _) = escape_one_if_required::<D>(s)
+        .map_err(|x| AtgParseError::new(0, AtgParseErrorReason::EscapeMalformed(x)))?;
     if first != D::ATG_CONTROL_POINTS.start_param {
-        return Err(AtgParseError::new(0, AtgParseErrorReason::MissingParameterStart));
+        return Err(AtgParseError::new(
+            0,
+            AtgParseErrorReason::MissingParameterStart,
+        ));
     };
 
-    escape_until_next::<A, D>(D::ATG_CONTROL_POINTS.stop_param, remainder).map_err(|x| x.offset_location(1))
+    escape_until_next::<A, D>(D::ATG_CONTROL_POINTS.stop_param, remainder)
+        .map_err(|x| x.offset_location(1))
 }
 
 /// Parse a single parameter which needs to be native.
 ///
 /// The first character in the input needs to be the parameter start control point.
-fn collect_native_parameter<A, D>(s: &str) -> Result<(String, &str, usize), AtgParseError::<A>>
-    where D: AtgDialect,
-          A: AnchorDialect,
+fn collect_native_parameter<A, D>(s: &str) -> Result<(String, &str, usize), AtgParseError<A>>
+where
+    D: AtgDialect,
+    A: AnchorDialect,
 {
     if s.is_empty() {
-        return Err(AtgParseError::new(0, AtgParseErrorReason::MissingParameterStart));
+        return Err(AtgParseError::new(
+            0,
+            AtgParseErrorReason::MissingParameterStart,
+        ));
     };
 
     let (parameter, remainder, offset) = collect_parameter::<A, D>(s)?;
     for (idx, c) in parameter.char_indices() {
         if !D::NATIVE_POINTS.contains(c) {
-            return Err(AtgParseError::new(idx, AtgParseErrorReason::NotNative(parameter)));
+            return Err(AtgParseError::new(
+                idx,
+                AtgParseErrorReason::NotNative(parameter),
+            ));
         };
-    };
+    }
     Ok((parameter, remainder, offset))
 }
 
@@ -476,7 +519,7 @@ where
     }
 
     /// parse a string into an ATG text.
-    pub fn parse<D>(s: &str) -> Result<Self, AtgParseError::<A>>
+    pub fn parse<D>(s: &str) -> Result<Self, AtgParseError<A>>
     where
         D: AtgDialect,
     {
@@ -528,18 +571,21 @@ where
         }
     }
 
-    fn parse_anchor<D>(s: &str) -> Result<(A, &str), AtgParseError::<A>>
-        where D: AtgDialect,
+    fn parse_anchor<D>(s: &str) -> Result<(A, &str), AtgParseError<A>>
+    where
+        D: AtgDialect,
     {
         // get one parameter
         let (anchor_string, remainder, _) = collect_parameter::<A, D>(s)?;
-        let anchor = anchor_string.parse::<A>().map_err(|x| AtgParseError::new(1, AtgParseErrorReason::Anchor(x)))?;
+        let anchor = anchor_string
+            .parse::<A>()
+            .map_err(|x| AtgParseError::new(1, AtgParseErrorReason::Anchor(x)))?;
         Ok((anchor, remainder))
     }
 
-    fn parse_comment<D>(s: &str) -> Result<(usize, &str), AtgParseError::<A>>
-        where
-            D: AtgDialect,
+    fn parse_comment<D>(s: &str) -> Result<(usize, &str), AtgParseError<A>>
+    where
+        D: AtgDialect,
     {
         let (comment, remainder, _) = collect_parameter::<A, D>(s)?;
         Ok((comment.len(), remainder))
@@ -548,8 +594,9 @@ where
     /// read all the characters until the next non-comment non-escape control sequence
     ///
     /// ignores comments
-    fn parse_native<D>(s: &str) -> Result<(Self, &str), AtgParseError::<A>>
-        where D: AtgDialect,
+    fn parse_native<D>(s: &str) -> Result<(Self, &str), AtgParseError<A>>
+    where
+        D: AtgDialect,
     {
         if s.is_empty() {
             return Ok((Part::Native("".to_owned()), ""));
@@ -566,23 +613,27 @@ where
             // if the control point is a comment, parse the comment and ignore it
             if ctrl_point == D::ATG_CONTROL_POINTS.comment {
                 (_, remainder) = Self::parse_comment::<D>(remainder)?;
-                (next_res, maybe_ctrl, remainder, add_offset) = escape_until_control_point::<A, D>(remainder).map_err(|x| x.offset_location(offset))?;
+                (next_res, maybe_ctrl, remainder, add_offset) =
+                    escape_until_control_point::<A, D>(remainder)
+                        .map_err(|x| x.offset_location(offset))?;
                 offset += add_offset;
                 res.push_str(&next_res);
             // if the control point is nonsemantic, completely ignore it (effectively a single
             // character comment)
             } else if D::is_non_semantic(&ctrl_point) {
-                (next_res, maybe_ctrl, remainder, add_offset) = escape_until_control_point::<A, D>(remainder).map_err(|x| x.offset_location(offset))?;
+                (next_res, maybe_ctrl, remainder, add_offset) =
+                    escape_until_control_point::<A, D>(remainder)
+                        .map_err(|x| x.offset_location(offset))?;
                 offset += add_offset;
                 res.push_str(&next_res);
             } else {
                 return Ok((Part::<A>::Native(res), remainder));
             };
-        };
+        }
     }
 
     /// Parse a string as a single ATG Part
-    fn parse<D>(s: &str) -> Result<(Self, &str), AtgParseError::<A>>
+    fn parse<D>(s: &str) -> Result<(Self, &str), AtgParseError<A>>
     where
         D: AtgDialect,
     {
@@ -590,26 +641,33 @@ where
             return Ok((Part::<A>::Native("".to_owned()), s));
         };
         // escape the first character if required
-        let (c, remainder, _) = escape_one_if_required::<D>(s).map_err(|x| AtgParseError::new(0, AtgParseErrorReason::EscapeMalformed(x)))?;
+        let (c, remainder, _) = escape_one_if_required::<D>(s)
+            .map_err(|x| AtgParseError::new(0, AtgParseErrorReason::EscapeMalformed(x)))?;
 
         // check what we have to parse
         if c == D::ATG_CONTROL_POINTS.illegible {
-            let (illeg, remainder) = Uncertain::<Illegible>::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
+            let (illeg, remainder) = Uncertain::<Illegible>::parse::<A, D>(remainder)
+                .map_err(|x| x.offset_location(1))?;
             Ok((Part::<A>::Illegible(illeg), remainder))
         } else if c == D::ATG_CONTROL_POINTS.lacuna {
-            let (lacuna, remainder) = Uncertain::<Lacuna>::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
+            let (lacuna, remainder) =
+                Uncertain::<Lacuna>::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
             Ok((Part::<A>::Lacuna(lacuna), remainder))
         } else if c == D::ATG_CONTROL_POINTS.anchor {
-            let (anchor, remainder) = Self::parse_anchor::<D>(remainder).map_err(|x| x.offset_location(1))?;
+            let (anchor, remainder) =
+                Self::parse_anchor::<D>(remainder).map_err(|x| x.offset_location(1))?;
             Ok((Part::<A>::Anchor(anchor), remainder))
         } else if c == D::ATG_CONTROL_POINTS.format_break {
-            let (format_break, remainder) = FormatBreak::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
+            let (format_break, remainder) =
+                FormatBreak::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
             Ok((Part::<A>::FormatBreak(format_break), remainder))
         } else if c == D::ATG_CONTROL_POINTS.correction {
-            let (correction, remainder) = Correction::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
+            let (correction, remainder) =
+                Correction::parse::<A, D>(remainder).map_err(|x| x.offset_location(1))?;
             Ok((Part::<A>::Correction(correction), remainder))
         } else if c == D::ATG_CONTROL_POINTS.comment {
-            let (comment_length, remainder) = Self::parse_comment::<D>(remainder).map_err(|x| x.offset_location(1))?;
+            let (comment_length, remainder) =
+                Self::parse_comment::<D>(remainder).map_err(|x| x.offset_location(1))?;
             Self::parse_native::<D>(remainder).map_err(|x| x.offset_location(comment_length))
         } else {
             Self::parse_native::<D>(s)
@@ -652,31 +710,55 @@ where
     ///
     /// The caller made sure that this input is preceeded by the uncertain code point (of either
     /// illegible or lacuna)
-    pub fn parse<A, D>(s: &str) -> Result<(Self, &str), AtgParseError::<A>>
-        where A: AnchorDialect,
-              D: AtgDialect,
+    pub fn parse<A, D>(s: &str) -> Result<(Self, &str), AtgParseError<A>>
+    where
+        A: AnchorDialect,
+        D: AtgDialect,
     {
-        let (first, remainder, _) = escape_one_if_required::<D>(s).map_err(|x| AtgParseError::new(0, AtgParseErrorReason::EscapeMalformed(x)))?;
+        let (first, remainder, _) = escape_one_if_required::<D>(s)
+            .map_err(|x| AtgParseError::new(0, AtgParseErrorReason::EscapeMalformed(x)))?;
         if first != D::ATG_CONTROL_POINTS.start_param {
-            return Err(AtgParseError::new(0, AtgParseErrorReason::MissingParameterStart));
+            return Err(AtgParseError::new(
+                0,
+                AtgParseErrorReason::MissingParameterStart,
+            ));
         };
         // collect until the next stop_param
-        let (first_param, remainder, first_param_offset) = escape_until_next::<A, D>(D::ATG_CONTROL_POINTS.stop_param, remainder).map_err(|x| x.offset_location(1))?;
+        let (first_param, remainder, first_param_offset) =
+            escape_until_next::<A, D>(D::ATG_CONTROL_POINTS.stop_param, remainder)
+                .map_err(|x| x.offset_location(1))?;
         // make sure this is a number
-        let uncertain_len = first_param.parse::<u8>().map_err(|_| AtgParseError::new(1, AtgParseErrorReason::LengthNotANumber(first_param)))?;
+        let uncertain_len = first_param.parse::<u8>().map_err(|_| {
+            AtgParseError::new(1, AtgParseErrorReason::LengthNotANumber(first_param))
+        })?;
         if remainder.is_empty() {
             return Ok((Uncertain::<T>::new(uncertain_len, None), remainder));
         };
 
-        let (proposal, remainder, _) = match collect_native_parameter::<A, D>(remainder).map_err(|x| x.offset_location(first_param_offset + 1)) {
+        let (proposal, remainder, _) = match collect_native_parameter::<A, D>(remainder)
+            .map_err(|x| x.offset_location(first_param_offset + 1))
+        {
             Ok(x) => x,
-            Err(AtgParseError { location: _, reason: AtgParseErrorReason::MissingParameterStart }) => {
+            Err(AtgParseError {
+                location: _,
+                reason: AtgParseErrorReason::MissingParameterStart,
+            }) => {
                 return Ok((Uncertain::<T>::new(uncertain_len, None), remainder));
-            },
-            Err(x) => { return Err(x) },
+            }
+            Err(x) => return Err(x),
         };
         // make sure every char until the next stop_param is native (or escaped native)
-        Ok((Uncertain::<T>::new(uncertain_len, if proposal.is_empty() { None } else { Some(proposal) }), remainder))
+        Ok((
+            Uncertain::<T>::new(
+                uncertain_len,
+                if proposal.is_empty() {
+                    None
+                } else {
+                    Some(proposal)
+                },
+            ),
+            remainder,
+        ))
     }
 }
 impl Uncertain<Illegible> {
@@ -699,7 +781,6 @@ impl Uncertain<Illegible> {
             }
         }
     }
-
 }
 impl Uncertain<Lacuna> {
     fn render<D>(&self) -> String
@@ -771,8 +852,9 @@ impl Correction {
     ///
     /// The caller has stripped the correction control point already
     fn parse<A, D>(s: &str) -> Result<(Self, &str), AtgParseError<A>>
-        where A: AnchorDialect,
-              D: AtgDialect,
+    where
+        A: AnchorDialect,
+        D: AtgDialect,
     {
         let mut versions = Vec::<Present>::new();
         let mut offset = 0_usize;
@@ -782,19 +864,18 @@ impl Correction {
         versions.push(Present::Native(param));
         loop {
             (param, remainder, add_offset) = match collect_native_parameter::<A, D>(remainder) {
-                Ok((x, y, z)) => {
-                    (x, y, z)
-                },
-                Err(AtgParseError { reason: AtgParseErrorReason::MissingParameterStart, location: _}) => {
-                    return Ok((Correction { versions }, remainder))
-                },
+                Ok((x, y, z)) => (x, y, z),
+                Err(AtgParseError {
+                    reason: AtgParseErrorReason::MissingParameterStart,
+                    location: _,
+                }) => return Ok((Correction { versions }, remainder)),
                 Err(x) => {
                     return Err(x.offset_location(offset));
-                },
+                }
             };
             offset += add_offset;
             versions.push(Present::Native(param));
-        };
+        }
     }
 }
 
@@ -823,26 +904,20 @@ impl FormatBreak {
     }
 
     fn parse<A, D>(s: &str) -> Result<(Self, &str), AtgParseError<A>>
-        where A: AnchorDialect,
-              D: AtgDialect,
+    where
+        A: AnchorDialect,
+        D: AtgDialect,
     {
         let (parameter, remainder, _) = collect_parameter::<A, D>(s)?;
         match parameter.as_str() {
-            "line" => {
-                Ok((FormatBreak::Line, remainder))
-            }
-            "paragraph" => {
-                Ok((FormatBreak::Paragraph, remainder))
-            }
-            "column" => {
-                Ok((FormatBreak::Column, remainder))
-            }
-            "page" => {
-                Ok((FormatBreak::Page, remainder))
-            }
-            _ => {
-                Err(AtgParseError::new(1, AtgParseErrorReason::UnknownFormatBreak(parameter)))
-            }
+            "line" => Ok((FormatBreak::Line, remainder)),
+            "paragraph" => Ok((FormatBreak::Paragraph, remainder)),
+            "column" => Ok((FormatBreak::Column, remainder)),
+            "page" => Ok((FormatBreak::Page, remainder)),
+            _ => Err(AtgParseError::new(
+                1,
+                AtgParseErrorReason::UnknownFormatBreak(parameter),
+            )),
         }
     }
 }

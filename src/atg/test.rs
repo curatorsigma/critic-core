@@ -81,7 +81,8 @@ impl AnchorDialect for Stanza {
 }
 
 use crate::atg::{
-    escape_one_if_required, escape_until_control_point, AtgParseError, AtgParseErrorReason, Correction, FormatBreak, Illegible, Lacuna, Part, Present, Text, Uncertain
+    escape_one_if_required, escape_until_control_point, AtgParseError, AtgParseErrorReason,
+    Correction, FormatBreak, Illegible, Lacuna, Part, Present, Text, Uncertain,
 };
 
 #[test]
@@ -180,8 +181,7 @@ fn render_text() {
 fn render_part() {
     let native = Part::<Stanza>::Native("native".to_owned());
     assert_eq!(native.render::<ExampleAtgDialect>(), "native");
-    let illeg =
-        Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(2, Some("?s".to_owned())));
+    let illeg = Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(2, Some("?s".to_owned())));
     assert_eq!(illeg.render::<ExampleAtgDialect>(), "^(2)(?s)");
     let lacuna = Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(4, None));
     assert_eq!(lacuna.render::<ExampleAtgDialect>(), "~(4)");
@@ -269,31 +269,73 @@ fn test_escape_until_control_point() {
 fn parse_part() {
     let native = "abcdef";
     let parsed_native = Part::<Stanza>::parse::<ExampleAtgDialect>(native).unwrap();
-    assert_eq!(parsed_native, (Part::<Stanza>::Native("abcdef".to_owned()), ""));
+    assert_eq!(
+        parsed_native,
+        (Part::<Stanza>::Native("abcdef".to_owned()), "")
+    );
 
     let illeg = "^(3)(abc)";
     let parsed_illeg = Part::<Stanza>::parse::<ExampleAtgDialect>(illeg).unwrap();
-    assert_eq!(parsed_illeg, (Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(3, Some("abc".to_owned()))), ""));
+    assert_eq!(
+        parsed_illeg,
+        (
+            Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(3, Some("abc".to_owned()))),
+            ""
+        )
+    );
     let illeg = "^(2)";
     let parsed_illeg = Part::<Stanza>::parse::<ExampleAtgDialect>(illeg).unwrap();
-    assert_eq!(parsed_illeg, (Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(2, None)), ""));
+    assert_eq!(
+        parsed_illeg,
+        (
+            Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(2, None)),
+            ""
+        )
+    );
     let illeg = "^(2)()";
     let parsed_illeg = Part::<Stanza>::parse::<ExampleAtgDialect>(illeg).unwrap();
-    assert_eq!(parsed_illeg, (Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(2, None)), ""));
+    assert_eq!(
+        parsed_illeg,
+        (
+            Part::<Stanza>::Illegible(Uncertain::<Illegible>::new(2, None)),
+            ""
+        )
+    );
 
     let lacuna = "~(3)(abc)";
     let parsed_lacuna = Part::<Stanza>::parse::<ExampleAtgDialect>(lacuna).unwrap();
-    assert_eq!(parsed_lacuna, (Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(3, Some("abc".to_owned()))), ""));
+    assert_eq!(
+        parsed_lacuna,
+        (
+            Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(3, Some("abc".to_owned()))),
+            ""
+        )
+    );
     let lacuna = "~(2)some";
     let parsed_lacuna = Part::<Stanza>::parse::<ExampleAtgDialect>(lacuna).unwrap();
-    assert_eq!(parsed_lacuna, (Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(2, None)), "some"));
+    assert_eq!(
+        parsed_lacuna,
+        (
+            Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(2, None)),
+            "some"
+        )
+    );
     let lacuna = "~(2)()";
     let parsed_lacuna = Part::<Stanza>::parse::<ExampleAtgDialect>(lacuna).unwrap();
-    assert_eq!(parsed_lacuna, (Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(2, None)), ""));
+    assert_eq!(
+        parsed_lacuna,
+        (
+            Part::<Stanza>::Lacuna(Uncertain::<Lacuna>::new(2, None)),
+            ""
+        )
+    );
 
     let input = "/(line)";
     let parsed = Part::<Stanza>::parse::<ExampleAtgDialect>(input);
-    assert_eq!(parsed, Ok((Part::<Stanza>::FormatBreak(FormatBreak::Line), "")));
+    assert_eq!(
+        parsed,
+        Ok((Part::<Stanza>::FormatBreak(FormatBreak::Line), ""))
+    );
 
     let input = "#(comment)";
     let parsed = Part::<Stanza>::parse::<ExampleAtgDialect>(input);
@@ -301,11 +343,30 @@ fn parse_part() {
 
     let input = "&(optiona)(optionb)";
     let parsed = Part::<Stanza>::parse::<ExampleAtgDialect>(input);
-    assert_eq!(parsed, Ok((Part::<Stanza>::Correction(Correction { versions: vec![Present::Native("optiona".to_owned()), Present::Native("optionb".to_owned())] }), "")));
+    assert_eq!(
+        parsed,
+        Ok((
+            Part::<Stanza>::Correction(Correction {
+                versions: vec![
+                    Present::Native("optiona".to_owned()),
+                    Present::Native("optionb".to_owned())
+                ]
+            }),
+            ""
+        ))
+    );
 
     let input = "&(optiona)no option";
     let parsed = Part::<Stanza>::parse::<ExampleAtgDialect>(input);
-    assert_eq!(parsed, Ok((Part::<Stanza>::Correction(Correction { versions: vec![Present::Native("optiona".to_owned())] }), "no option")));
+    assert_eq!(
+        parsed,
+        Ok((
+            Part::<Stanza>::Correction(Correction {
+                versions: vec![Present::Native("optiona".to_owned())]
+            }),
+            "no option"
+        ))
+    );
 }
 
 #[test]
@@ -315,7 +376,8 @@ fn parse_native() {
     assert_eq!(parsed_native, Part::<Stanza>::Native(native.to_owned()));
 
     let native = "a^(1)(b)";
-    let (parsed_native, remainder) = Part::<Stanza>::parse_native::<ExampleAtgDialect>(native).unwrap();
+    let (parsed_native, remainder) =
+        Part::<Stanza>::parse_native::<ExampleAtgDialect>(native).unwrap();
     assert_eq!(parsed_native, Part::<Stanza>::Native("a".to_owned()));
     assert_eq!(remainder, "^(1)(b)");
 }
@@ -346,21 +408,30 @@ fn test_escape_one_if_required() {
 }
 
 #[test]
-fn test_parse_anchor(){
+fn test_parse_anchor() {
     let input = "(1)asdf";
     let parsed = Part::<Stanza>::parse_anchor::<ExampleAtgDialect>(input).unwrap();
-    assert_eq!(parsed, (Stanza::One,  "asdf"))
+    assert_eq!(parsed, (Stanza::One, "asdf"))
 }
 
 #[test]
 fn parse_uncertain() {
     let input = "(2)(abc)";
     let parsed = Uncertain::<Illegible>::parse::<Stanza, ExampleAtgDialect>(&input).unwrap();
-    assert_eq!(parsed, (Uncertain::<Illegible>::new(2, Some("abc".to_owned())), ""));
+    assert_eq!(
+        parsed,
+        (Uncertain::<Illegible>::new(2, Some("abc".to_owned())), "")
+    );
 
     let input = "(2)(\\g)";
     let parsed = Uncertain::<Illegible>::parse::<Stanza, ExampleAtgDialect>(&input);
-    assert_eq!(parsed, Err(AtgParseError::new(4, AtgParseErrorReason::EscapeMalformed("\\g)".to_owned()))))
+    assert_eq!(
+        parsed,
+        Err(AtgParseError::new(
+            4,
+            AtgParseErrorReason::EscapeMalformed("\\g)".to_owned())
+        ))
+    )
 }
 
 #[test]

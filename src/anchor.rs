@@ -27,7 +27,7 @@ use core::str::FromStr;
 ///     }
 /// }
 /// impl std::error::Error for ParseStanzaError {}
-/// 
+///
 /// #[derive(Debug, PartialEq)]
 /// enum Stanza {
 ///     One,
@@ -69,7 +69,8 @@ use core::str::FromStr;
 ///
 /// A more interesting example for an [AnchorDialect] could be a versification scheme for a
 /// classical work.
-pub trait AnchorDialect: FromStr<Err = Self::ParseError> + core::fmt::Display + core::fmt::Debug + PartialEq {
+pub trait AnchorDialect:
+    FromStr<Err = Self::ParseError> + core::fmt::Display + core::fmt::Debug + PartialEq
+{
     type ParseError: std::error::Error + PartialEq;
 }
-

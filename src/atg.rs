@@ -217,7 +217,7 @@ pub trait AtgDialect {
 ///
 /// This type contains the location of the encountered problem.
 #[derive(Debug, PartialEq)]
-struct AtgParseError<A>
+pub struct AtgParseError<A>
     where A: AnchorDialect,
 {
     /// Location at which the problem was encountered (byte-offset, NOT Unicode)
@@ -233,14 +233,14 @@ impl<A> core::fmt::Display for AtgParseError<A> where A: AnchorDialect {
 impl<A> std::error::Error for AtgParseError<A> where A: AnchorDialect {}
 impl<A> AtgParseError<A> where A: AnchorDialect {
     /// Create an [AtgParseError]
-    fn new(location: usize, reason: AtgParseErrorReason<A>) -> Self {
+    pub fn new(location: usize, reason: AtgParseErrorReason<A>) -> Self {
         Self {
             location, reason
         }
     }
 
     /// Add an offset to the existing location
-    fn offset_location(self, offset: usize) -> Self {
+    pub fn offset_location(self, offset: usize) -> Self {
         Self::new(self.location + offset, self.reason)
     }
 }
@@ -249,7 +249,7 @@ impl<A> AtgParseError<A> where A: AnchorDialect {
 ///
 /// This type does not contain the location of the encountered problem.
 #[derive(Debug, PartialEq, Eq)]
-enum AtgParseErrorReason<A>
+pub enum AtgParseErrorReason<A>
     where A: AnchorDialect,
 {
     /// An escape character was used but not followed by 2,4, or 6 hexdigits defining a unicode
@@ -453,7 +453,7 @@ fn collect_native_parameter<A, D>(s: &str) -> Result<(String, &str, usize), AtgP
 
 /// Struct containing a single text in ATG format
 #[derive(Debug)]
-struct Text<A>
+pub struct Text<A>
 where
     A: AnchorDialect,
 {
@@ -463,7 +463,7 @@ impl<A> Text<A>
 where
     A: AnchorDialect,
 {
-    fn render<D>(&self) -> String
+    pub fn render<D>(&self) -> String
     where
         D: AtgDialect,
     {
@@ -475,7 +475,7 @@ where
     }
 
     /// parse a string into an ATG text.
-    fn parse<D>(s: &str) -> Result<Self, AtgParseError::<A>>
+    pub fn parse<D>(s: &str) -> Result<Self, AtgParseError::<A>>
     where
         D: AtgDialect,
     {
@@ -617,17 +617,17 @@ where
 }
 
 #[derive(Debug, PartialEq)]
-struct Illegible;
+pub struct Illegible;
 #[derive(Debug, PartialEq)]
-struct Lacuna;
+pub struct Lacuna;
 /// Reason for some part of the text to be uncertain
-trait UncertainReason {}
+pub trait UncertainReason {}
 impl UncertainReason for Illegible {}
 impl UncertainReason for Lacuna {}
 
 /// Any part of the text that is uncertain
 #[derive(Debug, PartialEq)]
-struct Uncertain<T>
+pub struct Uncertain<T>
 where
     T: UncertainReason,
 {
@@ -639,7 +639,7 @@ impl<T> Uncertain<T>
 where
     T: UncertainReason,
 {
-    fn new(len: u8, proposal: Option<String>) -> Self {
+    pub fn new(len: u8, proposal: Option<String>) -> Self {
         Self {
             len,
             proposal,
@@ -651,7 +651,7 @@ where
     ///
     /// The caller made sure that this input is preceeded by the uncertain code point (of either
     /// illegible or lacuna)
-    fn parse<A, D>(s: &str) -> Result<(Self, &str), AtgParseError::<A>>
+    pub fn parse<A, D>(s: &str) -> Result<(Self, &str), AtgParseError::<A>>
         where A: AnchorDialect,
               D: AtgDialect,
     {
@@ -724,7 +724,7 @@ impl Uncertain<Lacuna> {
 
 /// Anything that is present, but potentially not legible.
 #[derive(Debug, PartialEq)]
-enum Present {
+pub enum Present {
     Native(String),
     Illegible(Uncertain<Illegible>),
 }
@@ -799,7 +799,7 @@ impl Correction {
 
 /// Information about a format break
 #[derive(Debug, PartialEq)]
-enum FormatBreak {
+pub enum FormatBreak {
     Line,
     Column,
     Paragraph,
@@ -845,4 +845,3 @@ impl FormatBreak {
         }
     }
 }
-

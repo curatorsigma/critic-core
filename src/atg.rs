@@ -4,7 +4,8 @@
 use std::marker::PhantomData;
 use crate::anchor::AnchorDialect;
 
-mod example;
+#[cfg(test)]
+mod test;
 
 /// [ControlPointDefinition] defines the control points (as unicode scalar values) which have
 /// special semantics in an `ATG` dialect.

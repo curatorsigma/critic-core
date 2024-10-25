@@ -1,7 +1,7 @@
 ![cargo test](https://github.com/curatorsigma/critic-core/actions/workflows/rust.yml/badge.svg)
 
 # critic-core
-This is the core library used by [`critic`](github.com/curatorsigma/critic), a toolchain for language agnostic textual criticism.
+This is the core library used by [`critic`](https://github.com/curatorsigma/critic), a toolchain for language agnostic textual criticism.
 If you are an end user of `critic`, you will probably want to look at the main repository.
 
 # What does this repository accomplish?
